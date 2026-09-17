@@ -1,0 +1,76 @@
+name: 'Container Security Scan'
+
+on:
+  push:
+    paths:
+      - 'app_python/**'
+      - '.github/workflows/security-scan.yml'
+  pull_request:
+    paths:
+      - 'app_python/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write   # для загрузки SARIF в GitHub Security tab
+
+jobs:
+  trivy-scan:
+    name: 'Trivy Vulnerability Scan'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          cd app_python
+          docker build -t app-python:scan .
+
+      # 1. Сканируем образ
+      - name: Run Trivy (image)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'app-python:scan'
+          format: 'sarif'
+          output: 'trivy-image.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'          # не ломаем пайплайн на уязвимостях
+          ignore-unfixed: true
+
+      - name: Upload Trivy image scan
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-image.sarif'
+          category: 'trivy-image'
+
+      # 2. Сканируем requirements.txt (файлы)
+      - name: Run Trivy (filesystem)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'app_python'
+          format: 'sarif'
+          output: 'trivy-fs.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          ignore-unfixed: true
+
+      - name: Upload Trivy fs scan
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-fs.sarif'
+          category: 'trivy-fs'
+
+      # 3. Показываем таблицу в логах для быстрого просмотра
+      - name: Trivy table output
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'app-python:scan'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          ignore-unfixed: true
