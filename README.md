@@ -2,7 +2,7 @@
 
 Автоматическое развёртывание web-приложения в Yandex Cloud с использованием Terraform, Docker и GitHub Actions.
 
-**Стек:** Terraform ~> 1.12.0, Yandex Cloud, Docker, Node.js 20, MySQL 8, GitHub Actions.
+**Стек:** Terraform ~> 1.12.0, Yandex Cloud, Docker, Python 3.12, FastAPI, Uvicorn, MySQL 8, GitHub Actions.
 
 ## Быстрый старт
 
@@ -13,63 +13,71 @@ cd terraform_final
 
 # 2. Создать personal.auto.tfvars с вашими данными
 cat > terraform/personal.auto.tfvars <<EOF
-cloud_id                 = "b1gervu69v9ig93k4v83"
-folder_id                = "b1g4blc2guo29mqbh6bp"
+cloud_id                 = "..."
+folder_id                = "..."
 service_account_key_file = "/home/user/authorized_key.json"
+service_account_id       = "..."
 ssh_public_key           = "ssh-rsa AAAA..."
 EOF
 
 # 3. Применить инфраструктуру
 cd terraform
-export AWS_ACCESS_KEY_ID="YCAJE..."
-export AWS_SECRET_ACCESS_KEY="YCM..."
 terraform init
 terraform apply -auto-approve
 
-# 4. Собрать и запушить Docker-образ
-cd ../app
+# 4. Собрать и запушить образ
+cd ../app_python
 REGISTRY_ID=$(cd ../terraform && terraform output -raw registry_id)
 yc container registry configure-docker
-docker build -t cr.yandex/$REGISTRY_ID/app:latest .
+docker build --provenance=false --sbom=false -t cr.yandex/$REGISTRY_ID/app:latest .
 docker push cr.yandex/$REGISTRY_ID/app:latest
 
-# 5. Открыть приложение
-cd ../terraform
-echo "http://$(terraform output -raw vm_external_ip)/"
-
-# 6. Удалить ресурсы
-terraform destroy -auto-approve
+# 5. Проверить приложение
+IP=$(cd ../terraform && terraform output -raw vm_external_ip)
+curl http://$IP/
 ```
-
-# Создаваемые ресурсы
-
-## Инфраструктура проекта
-
-### Ресурсы
-
-| Ресурс | Назначение | Статус |
-|---|---|---|
-| VPC final + подсеть `10.0.1.0/24` | Сеть | Готово |
-| Security Group `final-web-sg` | Порты 22, 80, 443 | Готово |
-| Managed MySQL `final-mysql` (s2.micro) | База данных | Готово |
-| Container Registry `final-app-registry` | Хранение образа | Готово |
-| VM `final-web-vm` (Ubuntu 22.04) | Docker + приложение | Готово |
-| LockBox `db-password` (опционально) | Секреты | Готово |
-
-### Статус артефактов
-
-| Артефакт | Платформа | Статус |
-|---|---|---|
-| Docker image | Yandex Container Registry | Собрано и опубликовано |
-| Terraform state | S3 (`terraform-dz5-state-.../terraform_final/`) | Готово: Remote + lock |
-| CI/CD | GitHub Actions | Готово: Apply + Destroy |
 
 ## Документация
 
-- [docs/architecture.md](docs/architecture.md) — схема архитектуры (Mermaid)
-- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — пошаговое развёртывание
-- [docs/REPORT.md](docs/REPORT.md) — итоговый отчёт по практике
-- [docs/TERRAFORM_DOCS](docs/TERRAFORM_DOCS.md) — автогенерация terraform-docs
+- [docs/TASK.md](docs/TASK.md) — техническое задание
+- [docs/architecture.md](docs/architecture.md) — архитектура и схема пайплайна
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — развёртывание
+- [docs/REPORT.md](docs/REPORT.md) — итоговый отчёт
 
+## Структура
+
+```
+.
+├── app_python/               # FastAPI-приложение
+│   ├── Dockerfile            # multi-stage сборка
+│   ├── main.py
+│   └── requirements.txt
+├── docs/                     # документация
+│   ├── TASK.md
+│   ├── architecture.md
+│   ├── DEPLOYMENT.md
+│   └── REPORT.md
+├── terraform/                # инфраструктура как код
+│   ├── main.tf
+│   ├── providers.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   ├── lockbox.tf
+│   ├── cloud-init.yml
+│   └── modules/
+│       ├── vpc/
+│       └── vm/
+└── .github/workflows/        # CI/CD
+    ├── terraform.yml
+    └── security-scan.yml
+```
 
 ## Скриншоты
+
+Полный набор скриншотов — в папке [`img/`](img/).
+
+Ключевые:
+
+- [Приложение в облаке](img/5.png) — ответ `TIME: ..., IP: None`
+- [Записи в БД](img/6.png) — `/requests`
+- [VPC](img/7.png), [Подсеть](img/8.png), [SG](img/9.png), [MySQL](img/10.png), [Registry](img/12.png), [VM](img/13.png)

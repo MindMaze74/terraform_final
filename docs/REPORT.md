@@ -126,6 +126,7 @@ resource "yandex_mdb_mysql_cluster" "db" {
 ```bash
 terraform plan
 # Plan: 9 to add, 0 to change, 0 to destroy.
+```
 
 ---
 
@@ -171,6 +172,7 @@ runcmd:
           DB_PASSWORD: ${db_password}
     COMPOSE
   - cd /home/ubuntu/app && docker compose up -d
+```
 
 ---
 
@@ -204,6 +206,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
 docker build --provenance=false --sbom=false \
   -t cr.yandex/crpet3e9fclqrqdqslgq/app:latest .
 docker push cr.yandex/crpet3e9fclqrqdqslgq/app:latest
+```
 
 ---
 
@@ -225,6 +228,8 @@ async def lifespan(app: FastAPI):
     if ensure_table_exists():
         print("Соединение с БД установлено...")
     yield
+```
+
 ---
 
 ## Задание 5* — LockBox
@@ -253,6 +258,8 @@ resource "yandex_lockbox_secret_version" "db" {
 
 **`.github/workflows/terraform.yml`:**
 
+Workflow использует общий блок `env:` на уровне workflow — все `TF_VAR_*` пробрасываются один раз и наследуются всеми шагами (init / plan / apply / destroy). Рабочая директория задаётся через `defaults.run.working-directory: ./terraform`.
+
 | Триггер | Действие |
 |---|---|
 | push в `main` | init → plan → apply |
@@ -275,6 +282,9 @@ resource "yandex_lockbox_secret_version" "db" {
 | `YC_FOLDER_ID` | ID каталога |
 | `YC_SSH_PUBLIC_KEY` | Публичный SSH-ключ |
 | `YC_SERVICE_ACCOUNT_KEY_JSON` | base64 от JSON-ключа SA |
+| `YC_SERVICE_ACCOUNT_ID` | ID сервисного аккаунта для ВМ (pull из Container Registry) |
+
+> **Важно.** Без `YC_SERVICE_ACCOUNT_ID` workflow упадёт с ошибкой `Reference to undeclared input variable: service_account_id` — эта переменная пробрасывается как `TF_VAR_service_account_id`.
 
 ---
 
