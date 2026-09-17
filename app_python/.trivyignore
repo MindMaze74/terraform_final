@@ -12,22 +12,12 @@
 # =====================================================
 
 # --- Starlette (транзитивно через FastAPI) ---
-# SSRF и кража NTLM-учётных данных через UNC-пути (Windows)
-# Неприменимо для Linux-контейнера
-CVE-2026-48818
-
-# DoS через Range header merging
-CVE-2025-62727
-
-# Security restriction bypass via malformed HTTP Host header
-CVE-2026-48710
+CVE-2026-54282    # request.form() limits ignored (High)
+CVE-2026-48817    # non-standard HTTP methods (Medium)
+CVE-2025-54121    # DoS via event loop block (Medium)
+CVE-2026-13346    # improper HTTP request path validation (Low)
 
 # --- pip (системный в базовом образе python:3.12-slim) ---
-# Path traversal via malicious entry point name в pip wheel
-CVE-2026-8643
-
-# Arbitrary code execution via malicious wheel package
-CVE-2026-6357
-
-# Incorrect file installation due to improper archive handling
-CVE-2026-3219
+CVE-2026-54283    # arbitrary file installation via malicious package (Medium)
+CVE-2026-1703     # missing checks on symbolic link extraction (Medium)
+CVE-2025-8869     # path traversal via symlinks (Low)
