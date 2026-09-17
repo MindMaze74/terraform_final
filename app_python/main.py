@@ -177,11 +177,3 @@ def get_requests():
                 "total_records": len(result),
                 "records": result
             }
-
-
-# --- 7. Запуск приложения ---
-# Для запуска этого файла используется ASGI-сервер, например, uvicorn.
-# Команда: uvicorn main:app --reload
-if __name__ == '__main__':
-    import uvicorn
-    uvicorn.run(app, host='0.0.0.0', port=5000)
