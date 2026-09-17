@@ -126,14 +126,6 @@ resource "yandex_mdb_mysql_cluster" "db" {
 ```bash
 terraform plan
 # Plan: 9 to add, 0 to change, 0 to destroy.
-```
-
-### Скриншоты
-
-- https://img/7.png
-- https://img/8.png
-- https://img/9.png
-- https://img/10.png
 
 ---
 
@@ -179,12 +171,6 @@ runcmd:
           DB_PASSWORD: ${db_password}
     COMPOSE
   - cd /home/ubuntu/app && docker compose up -d
-```
-
-### Скриншоты
-
-- https://img/5.png
-- https://img/6.png
 
 ---
 
@@ -218,12 +204,6 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
 docker build --provenance=false --sbom=false \
   -t cr.yandex/crpet3e9fclqrqdqslgq/app:latest .
 docker push cr.yandex/crpet3e9fclqrqdqslgq/app:latest
-```
-
-### Скриншоты
-
-- https://img/12.png
-- https://img/13.png
 
 ---
 
@@ -245,13 +225,6 @@ async def lifespan(app: FastAPI):
     if ensure_table_exists():
         print("Соединение с БД установлено...")
     yield
-```
-
-### Скриншоты
-
-- https://img/5.png
-- https://img/6.png
-
 ---
 
 ## Задание 5* — LockBox
