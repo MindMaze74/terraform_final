@@ -4,13 +4,11 @@
 module "vpc" {
   source   = "./modules/vpc"
   env_name = var.vpc_name
-  subnets = [
-    { zone = "ru-central1-a", cidr = "10.0.1.0/24" }
-  ]
+  subnets  = var.vpc_subnets
 }
 
 # =====================================================
-# Security Group (порты 22, 80, 443)
+# Security Group
 # =====================================================
 resource "yandex_vpc_security_group" "web" {
   name       = "final-web-sg"
@@ -22,21 +20,24 @@ resource "yandex_vpc_security_group" "web" {
     protocol       = "TCP"
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
-
   ingress {
     description    = "HTTP"
     port           = 80
     protocol       = "TCP"
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
-
   ingress {
     description    = "HTTPS"
     port           = 443
     protocol       = "TCP"
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
-
+  ingress {
+    description    = "MySQL from VPC"
+    port           = 3306
+    protocol       = "TCP"
+    v4_cidr_blocks = [var.db_cidr]
+  }
   egress {
     description    = "Any outbound"
     protocol       = "ANY"
@@ -66,8 +67,8 @@ resource "yandex_mdb_mysql_cluster" "db" {
   }
 
   host {
-    zone      = "ru-central1-a"
-    subnet_id = module.vpc.subnet_ids["ru-central1-a-10.0.1.0/24"]
+    zone      = var.db_zone
+    subnet_id = module.vpc.subnet_ids["${var.db_zone}-${var.db_cidr}"]
   }
 }
 
@@ -101,10 +102,11 @@ resource "yandex_container_registry" "app" {
 module "vm" {
   source             = "./modules/vm"
   env_name           = "final-web"
-  zone               = var.default_zone
-  subnet_id          = module.vpc.subnet_ids["ru-central1-a-10.0.1.0/24"]
+  zone               = var.db_zone
+  subnet_id          = module.vpc.subnet_ids["${var.db_zone}-${var.db_cidr}"]
   ssh_public_key     = var.ssh_public_key
   security_group_ids = [yandex_vpc_security_group.web.id]
+  service_account_id = var.service_account_id
 
   labels = {
     project = "final"

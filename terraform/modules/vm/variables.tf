@@ -36,3 +36,8 @@ variable "security_group_ids" {
   type    = list(string)
   default = []
 }
+variable "service_account_id" {
+  type        = string
+  description = "ID сервисного аккаунта для ВМ (pull из Container Registry)"
+  default     = ""
+}

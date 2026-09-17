@@ -10,6 +10,7 @@ resource "yandex_compute_instance" "test" {
   name        = "${var.env_name}-vm"
   platform_id = "standard-v2"
   zone        = var.zone
+  service_account_id = var.service_account_id
 
   resources {
     cores         = 2

@@ -11,6 +11,10 @@ package_update: true
 package_upgrade: false
 
 runcmd:
+  # Освобождаем порт 80 (Ubuntu image содержит Apache)
+  - systemctl stop apache2 || true
+  - systemctl disable apache2 || true
+
   # Установка Docker
   - install -m 0755 -d /etc/apt/keyrings
   - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
