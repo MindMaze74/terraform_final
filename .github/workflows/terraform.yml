@@ -1,0 +1,68 @@
+name: 'Terraform CI/CD'
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    name: 'Terraform'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.12.2
+
+    - name: Write SA key to file (from base64)
+      run: |
+        echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY_JSON }}" | base64 -d > /tmp/sa-key.json
+        chmod 600 /tmp/sa-key.json
+        head -c 50 /tmp/sa-key.json  # для отладки — увидим начало JSON
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./terraform
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_KEY }}
+
+    - name: Terraform Plan
+      run: terraform plan -lock=false
+      working-directory: ./terraform
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_KEY }}
+        TF_VAR_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_service_account_key_file: /tmp/sa-key.json
+        TF_VAR_ssh_public_key: ${{ secrets.YC_SSH_PUBLIC_KEY }}
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve -lock=false
+      working-directory: ./terraform
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_KEY }}
+        TF_VAR_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_service_account_key_file: /tmp/sa-key.json
+        TF_VAR_ssh_public_key: ${{ secrets.YC_SSH_PUBLIC_KEY }}
+
+    - name: Terraform Destroy (manual)
+      if: github.event_name == 'workflow_dispatch'
+      run: terraform destroy -auto-approve -lock=false
+      working-directory: ./terraform
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_KEY }}
+        TF_VAR_cloud_id: ${{ secrets.YC_CLOUD_ID }}
+        TF_VAR_folder_id: ${{ secrets.YC_FOLDER_ID }}
+        TF_VAR_service_account_key_file: /tmp/sa-key.json
+        TF_VAR_ssh_public_key: ${{ secrets.YC_SSH_PUBLIC_KEY }}

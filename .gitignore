@@ -1,0 +1,43 @@
+cd ~/git/terraform_final
+cat > .gitignore <<'EOF'
+# =====================================================
+# Terraform
+# =====================================================
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+**/.terraform/*
+*.auto.tfvars
+!terraform.tfvars.example
+
+# =====================================================
+# Секреты
+# =====================================================
+personal.auto.tfvars
+secrets.auto.tfvars
+terraform.tfvars
+authorized_key.json
+*-key.json
+*service-account*.json
+
+# =====================================================
+# Node.js / Python
+# =====================================================
+node_modules/
+__pycache__/
+*.pyc
+venv/
+.venv/
+.env
+
+# =====================================================
+# Инструменты
+# =====================================================
+tflint
+*.zip
+inventory.ini
+*.log
+.DS_Store
+EOF

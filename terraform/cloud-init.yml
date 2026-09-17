@@ -1,0 +1,46 @@
+#cloud-config
+users:
+  - name: ubuntu
+    groups: sudo, docker
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+package_update: true
+package_upgrade: false
+
+runcmd:
+  # Установка Docker
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+  - systemctl enable docker
+  - systemctl start docker
+  - usermod -aG docker ubuntu
+
+  # Создание docker-compose.yml для Python-приложения
+  - mkdir -p /home/ubuntu/app
+  - |
+    cat > /home/ubuntu/app/docker-compose.yml <<'COMPOSE'
+    version: '3.8'
+    services:
+      web:
+        image: ${app_image}
+        ports:
+          - "80:5000"
+        environment:
+          DB_HOST: ${db_host}
+          DB_PORT: 3306
+          DB_NAME: ${db_name}
+          DB_USER: ${db_user}
+          DB_PASSWORD: ${db_password}
+        restart: unless-stopped
+    COMPOSE
+  - chown -R ubuntu:ubuntu /home/ubuntu/app
+
+  # Запуск приложения (образ подтянется из Container Registry)
+  - cd /home/ubuntu/app && docker compose up -d
